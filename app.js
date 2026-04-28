@@ -1,6 +1,7 @@
 import './styles.css'
 import { supabase } from './supabase.js'
 import { currencies, mainCurrency, convertToMainCurrency } from './currencies.js'
+import Chart from 'chart.js/auto'
 
 let accounts = []
 let profiles = []
@@ -8,6 +9,7 @@ let currentView = 'dashboard'
 let accountToDelete = null
 let profileToDelete = null
 let editingAccountId = null
+let incomeChart = null
 let editingProfileId = null
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -252,8 +254,13 @@ function renderDashboard() {
     
     document.getElementById('totalAccounts').textContent = stats.accounts
     document.getElementById('totalProfiles').textContent = stats.profiles
-    document.getElementById('monthlyIncome').textContent = formatCurrency(stats.monthlyIncome)
     document.getElementById('expiringSoon').textContent = stats.expiring
+    
+    const totalIncomeEUR = profiles.reduce((sum, p) => {
+        return sum + convertToMainCurrency(parseFloat(p.price || 0), p.currency || 'EUR')
+    }, 0)
+    
+    document.getElementById('totalIncomeEUR').textContent = formatCurrency(totalIncomeEUR, 'EUR')
     
     renderRecentActivity()
 }
@@ -697,9 +704,11 @@ function renderIncome() {
 }
 
 function renderIncomeChart() {
-    const container = document.getElementById('incomeChart')
-    const now = new Date()
+    const ctx = document.getElementById('incomeChartCanvas')
     
+    if (!ctx) return
+    
+    const now = new Date()
     const months = []
     for (let i = 5; i >= 0; i--) {
         const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
@@ -710,29 +719,74 @@ function renderIncomeChart() {
         })
     }
     
-    const maxIncome = Math.max(...months.map(m => {
-        return profiles
-            .filter(p => {
-                const renewalDate = new Date(p.renewal_date)
-                return renewalDate.getMonth() === m.month && renewalDate.getFullYear() === m.year
-            })
-            .reduce((sum, p) => sum + parseFloat(p.price || 0), 0)
-    }), 1)
-    
-    container.innerHTML = months.map(m => {
+    const data = months.map(m => {
         const monthProfiles = profiles.filter(p => {
             const renewalDate = new Date(p.renewal_date)
             return renewalDate.getMonth() === m.month && renewalDate.getFullYear() === m.year
         })
-        const income = monthProfiles.reduce((sum, p) => sum + parseFloat(p.price || 0), 0)
-        const height = (income / maxIncome) * 100
-        
-        return `
-            <div class="chart-bar" style="height: ${height}%" data-value="${formatCurrency(income)}">
-                <span class="month-label">${m.name}</span>
-            </div>
-        `
-    }).join('')
+        return monthProfiles.reduce((sum, p) => sum + convertToMainCurrency(parseFloat(p.price || 0), p.currency || 'EUR'), 0)
+    })
+    
+    if (incomeChart) {
+        incomeChart.data.labels = months.map(m => m.name)
+        incomeChart.data.datasets[0].data = data
+        incomeChart.update()
+    } else {
+        incomeChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months.map(m => m.name),
+                datasets: [{
+                    label: 'Ingresos (EUR)',
+                    data: data,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#6366f1',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '€' + context.parsed.y.toFixed(2)
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '€' + value
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        })
+    }
 }
 
 function renderIncomeHistory() {

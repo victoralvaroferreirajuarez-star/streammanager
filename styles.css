@@ -452,11 +452,14 @@ body {
 }
 
 .chart-container {
-    display: flex;
-    align-items: flex-end;
-    gap: 16px;
-    height: 200px;
+    height: 250px;
     padding: 20px 0;
+    position: relative;
+}
+
+.chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
 }
 
 .chart-bar {
