@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Clientes Streaming</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-tv"></i>
+                <span>StreamManager</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-view="dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-view="accounts">
+                    <i class="fas fa-database"></i>
+                    <span>Cuentas</span>
+                </a>
+                <a href="#" class="nav-item" data-view="profiles">
+                    <i class="fas fa-users"></i>
+                    <span>Perfiles</span>
+                </a>
+                <a href="#" class="nav-item" data-view="income">
+                    <i class="fas fa-dollar-sign"></i>
+                    <span>Ingresos</span>
+                </a>
+                <a href="#" class="nav-item" data-view="alerts">
+                    <i class="fas fa-bell"></i>
+                    <span>Alertas</span>
+                    <span class="badge" id="alertBadge">0</span>
+                </a>
+                <div class="nav-divider"></div>
+                <a href="#" class="nav-item" id="exportBtn">
+                    <i class="fas fa-download"></i>
+                    <span>Exportar</span>
+                </a>
+                <a href="#" class="nav-item" id="importBtn">
+                    <i class="fas fa-upload"></i>
+                    <span>Importar</span>
+                </a>
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <section id="dashboard" class="view active">
+                <header class="view-header">
+                    <h1>Dashboard</h1>
+                    <p class="date-display" id="currentDate"></p>
+                </header>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Total Cuentas</h3>
+                            <p class="stat-value" id="totalAccounts">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Total Perfiles</h3>
+                            <p class="stat-value" id="totalProfiles">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Por Vencer</h3>
+                            <p class="stat-value" id="expiringSoon">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Ingresos Mensuales</h3>
+                            <p class="stat-value" id="monthlyIncome">$0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recent-activity">
+                    <h2>Actividad Reciente</h2>
+                    <div class="activity-list" id="recentActivity">
+                        <p class="empty-state">No hay actividad reciente</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="accounts" class="view">
+                <header class="view-header">
+                    <h1>Cuentas de Streaming</h1>
+                    <button class="btn-primary" id="addAccountBtn">
+                        <i class="fas fa-plus"></i> Nueva Cuenta
+                    </button>
+                </header>
+
+                <div class="filters">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchAccount" placeholder="Buscar cuenta...">
+                    </div>
+                </div>
+
+                <div class="clients-table-container">
+                    <table class="clients-table">
+                        <thead>
+                            <tr>
+                                <th>Plataforma</th>
+                                <th>Correo</th>
+                                <th>Perfiles</th>
+                                <th>Activos</th>
+                                <th>Precio Total</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accountsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="profiles" class="view">
+                <header class="view-header">
+                    <h1>Perfiles</h1>
+                    <button class="btn-primary" id="addProfileBtn">
+                        <i class="fas fa-plus"></i> Nuevo Perfil
+                    </button>
+                </header>
+
+                <div class="filters">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchProfile" placeholder="Buscar perfil...">
+                    </div>
+                    <select id="filterStatus" class="filter-select">
+                        <option value="all">Todos</option>
+                        <option value="active">Activos</option>
+                        <option value="expiring">Por Vencer</option>
+                        <option value="expired">Expirados</option>
+                    </select>
+                </div>
+
+                <div class="clients-table-container">
+                    <table class="clients-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Correo</th>
+                                <th>Plataforma</th>
+                                <th>Precio</th>
+                                <th>Fecha Inicio</th>
+                                <th>Próxima Renovación</th>
+                                <th>Estado</th>
+                                <th>Notas</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="profilesTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="income" class="view">
+                <header class="view-header">
+                    <h1>Ingresos</h1>
+                    <div class="income-summary">
+                        <div class="summary-item">
+                            <span class="label">Este Mes</span>
+                            <span class="value" id="thisMonthIncome">$0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Mes Anterior</span>
+                            <span class="value" id="lastMonthIncome">$0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Total</span>
+                            <span class="value" id="totalIncome">$0</span>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="income-chart">
+                    <h2>Ingresos por Mes</h2>
+                    <div class="chart-container" id="incomeChart">
+                    </div>
+                </div>
+
+                <div class="income-history">
+                    <h2>Historial de Renovaciones</h2>
+                    <table class="income-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha Renovación</th>
+                                <th>Perfil</th>
+                                <th>Plataforma</th>
+                                <th>Monto</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="incomeTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="alerts" class="view">
+                <header class="view-header">
+                    <h1>Alertas</h1>
+                    <div class="alert-filters">
+                        <button class="alert-filter active" data-filter="all">Todas</button>
+                        <button class="alert-filter" data-filter="expiring">Por Vencer (7 días)</button>
+                        <button class="alert-filter" data-filter="expired">Expiradas</button>
+                    </div>
+                </header>
+
+                <div class="alerts-list" id="alertsList">
+                    <p class="empty-state">No hay alertas</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="modal" id="accountModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="accountModalTitle">Nueva Cuenta</h2>
+                <button class="close-modal" id="closeAccountModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="accountForm">
+                <input type="hidden" id="accountId">
+                
+                <div class="form-group">
+                    <label for="platform">Plataforma</label>
+                    <select id="platform" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="Netflix">Netflix</option>
+                        <option value="Spotify">Spotify</option>
+                        <option value="Disney+">Disney+</option>
+                        <option value="HBO Max">HBO Max</option>
+                        <option value="Amazon Prime">Amazon Prime</option>
+                        <option value="YouTube Premium">YouTube Premium</option>
+                        <option value="Apple TV+">Apple TV+</option>
+                        <option value="Paramount+">Paramount+</option>
+                        <option value="Crunchyroll">Crunchyroll</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="accountEmail">Correo de la Cuenta</label>
+                    <input type="email" id="accountEmail" required placeholder="cuenta@ejemplo.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="accountPassword">Contraseña (opcional)</label>
+                    <input type="password" id="accountPassword" placeholder="Contraseña de la cuenta">
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelAccountBtn">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Cuenta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="profileModalTitle">Nuevo Perfil</h2>
+                <button class="close-modal" id="closeProfileModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="profileForm">
+                <input type="hidden" id="profileId">
+                
+                <div class="form-group">
+                    <label for="profileAccountId">Cuenta</label>
+                    <select id="profileAccountId" required>
+                        <option value="">Seleccionar cuenta...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="profileName">Nombre del Perfil</label>
+                    <input type="text" id="profileName" required placeholder="Ej: Juan Pérez">
+                </div>
+
+                <div class="form-group">
+                    <label for="profileEmail">Correo del Perfil (opcional)</label>
+                    <input type="email" id="profileEmail" placeholder="correo@ejemplo.com">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="profilePrice">Precio ($)</label>
+                        <input type="number" id="profilePrice" required min="0" step="0.01" placeholder="9.99">
+                    </div>
+                    <div class="form-group">
+                        <label for="profileStartDate">Fecha de Inicio</label>
+                        <input type="date" id="profileStartDate" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="profileNotes">Notas</label>
+                    <textarea id="profileNotes" rows="3" placeholder="Notas sobre el perfil..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelProfileBtn">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Perfil</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="deleteAccountModal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Confirmar Eliminación</h2>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas eliminar esta cuenta?</p>
+                <p class="warning-text">Todos los perfiles asociados también serán eliminados.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelAccountDelete">Cancelar</button>
+                <button class="btn-danger" id="confirmAccountDelete">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="deleteProfileModal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Confirmar Eliminación</h2>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas eliminar este perfil?</p>
+                <p class="warning-text">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelProfileDelete">Cancelar</button>
+                <button class="btn-danger" id="confirmProfileDelete">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
