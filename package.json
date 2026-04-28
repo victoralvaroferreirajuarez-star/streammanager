@@ -12,14 +12,5 @@
   },
   "devDependencies": {
     "vite": "^5.0.0"
-  },
-  "vercel": {
-    "builds": [
-      {
-        "src": "package.json",
-        "use": "@vercel/static-build",
-        "config": { "distDir": "dist" }
-      }
-    ]
   }
 }
