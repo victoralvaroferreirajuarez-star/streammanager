@@ -1,5 +1,6 @@
 import './styles.css'
 import { supabase } from './supabase.js'
+import { currencies, mainCurrency, convertToMainCurrency } from './currencies.js'
 
 let accounts = []
 let profiles = []
@@ -275,7 +276,8 @@ function calculateStats() {
         
         if (renewalDate.getMonth() === now.getMonth() && 
             renewalDate.getFullYear() === now.getFullYear()) {
-            monthlyIncome += parseFloat(profile.price || 0)
+            const converted = convertToMainCurrency(parseFloat(profile.price || 0), profile.currency || 'EUR')
+            monthlyIncome += converted
         }
     })
     
@@ -407,7 +409,7 @@ function renderProfiles() {
                 <td><strong>${profile.name}</strong></td>
                 <td>${profile.profile_email || '-'}</td>
                 <td>${account ? account.platform : 'N/A'}</td>
-                <td>${formatCurrency(profile.price)}</td>
+                <td>${formatCurrency(profile.price, profile.currency)}</td>
                 <td>${formatDate(profile.start_date)}</td>
                 <td>${formatDate(profile.renewal_date)}</td>
                 <td><span class="status-badge ${profile.status}">${getStatusLabel(profile.status)}</span></td>
@@ -552,6 +554,7 @@ function openProfileModal(profileId = null) {
     document.getElementById('profileStartDate').valueAsDate = new Date()
     
     populateAccountsSelect()
+    populateCurrencySelect()
     
     editingProfileId = profileId
     
@@ -564,12 +567,14 @@ function openProfileModal(profileId = null) {
             document.getElementById('profileName').value = profile.name
             document.getElementById('profileEmail').value = profile.profile_email || ''
             document.getElementById('profilePrice').value = profile.price
+            document.getElementById('profileCurrency').value = profile.currency || 'EUR'
             document.getElementById('profileStartDate').value = profile.start_date
             document.getElementById('profileNotes').value = profile.notes || ''
         }
     } else {
         title.textContent = 'Nuevo Perfil'
         document.getElementById('profileId').value = ''
+        document.getElementById('profileCurrency').value = 'EUR'
     }
     
     modal.classList.add('active')
@@ -591,6 +596,18 @@ function populateAccountsSelect() {
     })
 }
 
+function populateCurrencySelect() {
+    const select = document.getElementById('profileCurrency')
+    select.innerHTML = ''
+    
+    currencies.forEach(currency => {
+        const selected = currency.code === 'EUR' ? 'selected' : ''
+        select.innerHTML += `
+            <option value="${currency.code}" ${selected}>${currency.symbol} ${currency.name} (${currency.code})</option>
+        `
+    })
+}
+
 async function handleProfileSubmit(e) {
     e.preventDefault()
     
@@ -604,6 +621,7 @@ async function handleProfileSubmit(e) {
         name: document.getElementById('profileName').value,
         profile_email: document.getElementById('profileEmail').value,
         price: parseFloat(document.getElementById('profilePrice').value),
+        currency: document.getElementById('profileCurrency').value,
         start_date: startDate,
         renewal_date: renewalDate.toISOString().split('T')[0],
         notes: document.getElementById('profileNotes').value
@@ -654,19 +672,25 @@ function renderIncome() {
         const renewalDate = new Date(p.renewal_date)
         return renewalDate.getMonth() === thisMonth && renewalDate.getFullYear() === thisYear
     })
-    const thisMonthTotal = thisMonthProfiles.reduce((sum, p) => sum + parseFloat(p.price || 0), 0)
+    const thisMonthTotal = thisMonthProfiles.reduce((sum, p) => {
+        return sum + convertToMainCurrency(parseFloat(p.price || 0), p.currency || 'EUR')
+    }, 0)
     
     const lastMonthProfiles = profiles.filter(p => {
         const renewalDate = new Date(p.renewal_date)
         return renewalDate.getMonth() === lastMonth && renewalDate.getFullYear() === lastMonthYear
     })
-    const lastMonthTotal = lastMonthProfiles.reduce((sum, p) => sum + parseFloat(p.price || 0), 0)
+    const lastMonthTotal = lastMonthProfiles.reduce((sum, p) => {
+        return sum + convertToMainCurrency(parseFloat(p.price || 0), p.currency || 'EUR')
+    }, 0)
     
-    const totalIncome = profiles.reduce((sum, p) => sum + parseFloat(p.price || 0), 0)
+    const totalIncome = profiles.reduce((sum, p) => {
+        return sum + convertToMainCurrency(parseFloat(p.price || 0), p.currency || 'EUR')
+    }, 0)
     
-    document.getElementById('thisMonthIncome').textContent = formatCurrency(thisMonthTotal)
-    document.getElementById('lastMonthIncome').textContent = formatCurrency(lastMonthTotal)
-    document.getElementById('totalIncome').textContent = formatCurrency(totalIncome)
+    document.getElementById('thisMonthIncome').textContent = formatCurrency(thisMonthTotal, 'EUR')
+    document.getElementById('lastMonthIncome').textContent = formatCurrency(lastMonthTotal, 'EUR')
+    document.getElementById('totalIncome').textContent = formatCurrency(totalIncome, 'EUR')
     
     renderIncomeChart()
     renderIncomeHistory()
@@ -735,7 +759,7 @@ function renderIncomeHistory() {
                 <td>${formatDate(profile.renewal_date)}</td>
                 <td>${profile.name}</td>
                 <td>${account ? account.platform : 'N/A'}</td>
-                <td>${formatCurrency(profile.price)}</td>
+                <td>${formatCurrency(profile.price, profile.currency)}</td>
                 <td><span class="status-badge ${profile.status}">${getStatusLabel(profile.status)}</span></td>
             </tr>
         `
@@ -783,7 +807,7 @@ function renderAlerts(filter = 'all') {
             <i class="fas ${alert.type === 'expired' ? 'fa-exclamation-circle' : 'fa-clock'}"></i>
             <div class="alert-info">
                 <h3>${alert.profile.name}</h3>
-                <p>${alert.account ? alert.account.platform : 'N/A'} - ${formatCurrency(alert.profile.price)}/mes</p>
+                <p>${alert.account ? alert.account.platform : 'N/A'} - ${formatCurrency(alert.profile.price, alert.profile.currency)}/mes</p>
                 ${alert.profile.profile_email ? `<p class="alert-email">${alert.profile.profile_email}</p>` : ''}
             </div>
             <span class="alert-date">
@@ -820,8 +844,10 @@ function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2)
 }
 
-function formatCurrency(amount) {
-    return '$' + parseFloat(amount || 0).toFixed(2)
+function formatCurrency(amount, currencyCode = 'EUR') {
+    const currency = currencies.find(c => c.code === currencyCode)
+    if (!currency) return '€' + parseFloat(amount || 0).toFixed(2)
+    return currency.symbol + parseFloat(amount || 0).toFixed(2)
 }
 
 function formatDate(dateString) {

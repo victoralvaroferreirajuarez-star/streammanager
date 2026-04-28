@@ -85,11 +85,11 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon purple">
-                            <i class="fas fa-dollar-sign"></i>
+                            <i class="fas fa-euro-sign"></i>
                         </div>
                         <div class="stat-info">
-                            <h3>Ingresos Mensuales</h3>
-                            <p class="stat-value" id="monthlyIncome">$0</p>
+                            <h3>Ingresos Mensuales (EUR)</h3>
+                            <p class="stat-value" id="monthlyIncome">€0</p>
                         </div>
                     </div>
                 </div>
@@ -313,13 +313,20 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="profilePrice">Precio ($)</label>
+                        <label for="profilePrice">Precio</label>
                         <input type="number" id="profilePrice" required min="0" step="0.01" placeholder="9.99">
                     </div>
                     <div class="form-group">
-                        <label for="profileStartDate">Fecha de Inicio</label>
-                        <input type="date" id="profileStartDate" required>
+                        <label for="profileCurrency">Moneda</label>
+                        <select id="profileCurrency" required>
+                            <option value="EUR" selected>€ Euro (EUR)</option>
+                        </select>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="profileStartDate">Fecha de Inicio</label>
+                    <input type="date" id="profileStartDate" required>
                 </div>
 
                 <div class="form-group">
